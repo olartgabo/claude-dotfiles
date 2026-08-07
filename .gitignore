@@ -2,9 +2,31 @@
 *.swp
 *.swo
 *~
+node_modules/
 
-# machine-local overlays — never commit these
-.claude/settings.local.json
-.claude/CLAUDE.local.md
-.claude/.credentials.json
-.claude/projects/*
+# Machine-local overlays, if you keep them next to the checkout.
+claude/CLAUDE.local.md
+claude/settings.local.json
+
+# Everything below is what Claude Code writes into a live config directory.
+# The payload lives in claude/, not .claude/, and install.mjs copies files
+# rather than linking the directory — so none of this should ever appear here.
+# It is listed anyway: if someone does point a config dir at a checkout, the
+# cost of a missing line is publishing their transcripts and shell history.
+.claude/
+.credentials.json
+history.jsonl
+projects/
+todos/
+tasks/
+plans/
+shell-snapshots/
+file-history/
+backups/
+statsig/
+paths/
+ide/
+logs/
+telemetry/
+usage/
+*-cache.json

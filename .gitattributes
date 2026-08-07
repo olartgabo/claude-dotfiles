@@ -1,0 +1,4 @@
+# The hooks are read by Node on all three platforms and the repo is edited from
+# Windows and macOS. Normalize to LF so a checkout on one never shows up as a
+# whole-file diff on another.
+* text=auto eol=lf

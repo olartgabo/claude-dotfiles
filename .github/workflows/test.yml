@@ -1,0 +1,25 @@
+name: guards
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+jobs:
+  test:
+    # The guards used to be two hand-maintained implementations that disagreed.
+    # There is one now, so the only way it can diverge across the team is if it
+    # behaves differently per platform. Run it everywhere.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm test
+      - name: install into a scratch config dir
+        run: node install.mjs --target ${{ runner.temp }}/claude-config

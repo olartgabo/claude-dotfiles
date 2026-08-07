@@ -129,8 +129,8 @@ Then re-run the full command. A fix you have not re-verified is a guess.
 
 ## Repo-specific command sets
 
-- MCPJam Inspector (`~/Github/MCPJAM/inspector`) →
-  read `references/mcpjam-inspector.md`
+- MCPJam Inspector → read `references/mcpjam-inspector.md` (the checkout path is
+  in `CLAUDE.local.md`)
 
 For any other repo, derive the list per step 1 and consider adding a reference
 file here once you've done it, so the next run starts from the answer.
