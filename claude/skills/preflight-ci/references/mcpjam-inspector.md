@@ -1,8 +1,8 @@
 # MCPJam Inspector — CI command set
 
-Repo root: `~/Github/MCPJAM/inspector` (npm workspaces monorepo). Run everything
-from the **repo root**, not from `mcpjam-inspector/` — the root `npm test` chains
-guards that the workspace scripts don't have.
+An npm workspaces monorepo. Your checkout path is in `CLAUDE.local.md`; the
+commands below all run from the **repo root**, not from `mcpjam-inspector/` — the
+root `npm test` chains guards that the workspace scripts don't have.
 
 Derived from `.github/workflows/lint.yml` (check name **"Build and Test"**) and
 `.github/workflows/test.yml` (check names **"Run Tests"** and **"E2E Smoke
@@ -12,7 +12,7 @@ check name in the PR doesn't appear below — the workflows change.
 ## The full preflight, cheap first
 
 ```bash
-cd ~/Github/MCPJAM/inspector
+cd <your inspector checkout>
 git fetch origin && git merge origin/main        # step 2: test the merged tree
 export NODE_OPTIONS="--max-old-space-size=8192"  # see below — not optional here
 
@@ -23,9 +23,11 @@ npm test                                         # Run Tests
 npm run build:inspector                          # Build and Test
 ```
 
-`npm test` is the long one (~12.5k tests across 8 workspaces via
-`concurrently --kill-others-on-fail`). Everything above it is fast, so a failure
-there saves you the wait.
+`npm test` is the long one — thousands of tests, one `concurrently` process per
+workspace, `--kill-others-on-fail`. Everything above it is fast, so a failure
+there saves you the wait. Read `test:parallel` in the root `package.json` for the
+current workspace set rather than trusting a count written down here; workspaces
+get added.
 
 Capture real exit codes. `npm test | tail -20` reports *tail's* status, so a
 failing run reads as success — pipe to a file and check `$?`, or `set -o
@@ -38,23 +40,25 @@ that isn't there.
 server + client + shared concurrently and blows past Node 24's default heap.
 
 Locally it is needed for **`npm run typecheck` too**, which CI does not set it
-for. On a 14 GB machine that command dies partway through the `@mcpjam/sdk` build
-with `ERR_WORKER_OUT_OF_MEMORY: Worker terminated due to reaching memory limit`
-(tsup workers). That is a local resource limit, not a type error — CI's "Build and
-Test" passes the same command. Export the heap flag for the whole preflight and it
-exits 0. Don't go looking for a type error that isn't there.
+for. On a machine with less headroom than the runner, that command dies partway
+through the `@mcpjam/sdk` build with `ERR_WORKER_OUT_OF_MEMORY: Worker terminated
+due to reaching memory limit` (tsup workers). That is a local resource limit, not
+a type error — CI's "Build and Test" passes the same command. Export the heap flag
+for the whole preflight and it exits 0. Don't go looking for a type error that
+isn't there.
 
 ### What the root `npm test` chains
 
 In order: `check:mcp-v1-runtime-imports` → `check:bundled-runtime-paths` →
 `check:platform-runtime-safety` → build `@mcpjam/sdk` →
-`check:platform-runtime-safety:dist` → `test:parallel` (8 workspaces) →
-`test:packaging -w @mcpjam/sdk`.
+`check:platform-runtime-safety:dist` → `test:parallel` → `test:packaging -w
+@mcpjam/sdk`.
 
-The `check:*` guards are `! rg -n '...'` expressions. They need `rg` on PATH —
-present on this machine, and `test.yml` apt-installs it into the Playwright
-container for exactly this reason. If `rg` were missing the guards would pass
-without checking anything.
+The `check:*` guards are `! rg -n '...'` expressions, so they need `rg` on PATH.
+`test.yml` apt-installs it into the Playwright container for exactly this reason.
+**If `rg` is missing, the guards pass without checking anything** — the `!` makes
+a failed invocation look like a clean result. Run `rg --version` once before you
+trust a green `npm test` on a new machine.
 
 `npm run verify` (typecheck + test + build:inspector) covers most of the above in
 one command, but **not** `docs:check-tokens` or `typecheck:client`. Both are CI
@@ -94,30 +98,28 @@ cause easy to miss:
 grep -nE "exited with code|Sending SIGTERM" run.log | head
 ```
 
-## Known local-only divergence: `slack-app` biome
+## When a workspace your diff never touched fails locally
 
-Root `npm test` currently fails locally at `npm run verify -w @mcpjam/slack-app`
-(`npx @biomejs/biome check .` → 5 **format**-category diagnostics), and that
-failure kills the whole parallel run before the workspaces you care about finish.
+It happens: a lint or format check goes red locally in a package you didn't
+change, CI is green on the same commit, and because `--kill-others-on-fail` takes
+down the whole run, you never get to the workspaces you care about.
 
-CI runs the identical command on the identical commit and reports `Checked 59
-files. No fixes applied.` with exit 0. Verified identical on both sides: biome
-2.5.6 (wrapper and every `@biomejs/cli-*` platform package), `slack-app/biome.json`
-(tracked, not gitignored, no `.editorconfig` anywhere up the tree), and the file
-blobs. No biome daemon is running locally. **The cause is unresolved** — treat it
-as environmental until someone reproduces it in CI.
+Do **not** "fix" it by reformatting that package. CI is happy with those files;
+rewriting them commits churn in code your diff never touched, which is exactly
+the unrelated noise a reviewer will bounce. Instead:
 
-Do **not** "fix" it by running `biome check --write` on `slack-app`. CI is happy
-with those files; reformatting them commits churn in a package your diff never
-touched, which is exactly the unrelated-noise a reviewer will bounce. If a run
-dies here and your diff is nowhere near `slack-app`, run the workspaces your
-change affects directly and say in the PR that the root run was blocked locally by
-this and which parts you did verify.
+1. Confirm CI is green there on the same SHA (`gh run view` on the base commit).
+2. Run the workspaces your change actually affects, directly.
+3. Say so in the PR: the root run was blocked locally by an unrelated workspace,
+   and here is what you did verify.
+
+Then chase the divergence separately — it is usually a tool version or a config
+file resolving differently, and it is worth a fix, just not inside your PR.
 
 ## Iterating on a single failure
 
 ```bash
-cd ~/Github/MCPJAM/inspector/mcpjam-inspector
+cd <your inspector checkout>/mcpjam-inspector
 npx vitest run client/src/path/to/file.test.tsx
 npm run test -w @mcpjam/sdk                      # one workspace
 ```

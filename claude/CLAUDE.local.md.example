@@ -1,0 +1,29 @@
+# CLAUDE.local.md — per-machine overlay. Claude Code loads this after CLAUDE.md.
+#
+# install.mjs creates this file from the template if you don't have one, and
+# never overwrites it. It is not tracked by the dotfiles repo.
+#
+# Anything a teammate would have to change on their own laptop belongs here.
+# Delete the lines you don't use — a wrong fact is worse than a missing one.
+
+## This machine
+
+- Shell: <PowerShell 5.1 / bash / zsh>
+- Checkout of the MCPJam Inspector: <absolute path>
+- Other checkouts worth knowing: <paths>
+- `gh` authed as: <your GitHub handle>
+- On PATH: <jq, rg, python, gh — whatever you actually have>
+- Not on PATH: <the ones you don't, so Claude doesn't reach for them>
+
+## Shell quirks
+
+- If PowerShell: don't use `&&` between commands; chain with `;` or
+  `if ($?) { ... }`. Set `$env:PYTHONIOENCODING="utf-8"` for Python that prints
+  non-ASCII.
+- If a guard hook blocks something you need, say so rather than working around
+  it; `CLAUDE_GUARD_OFF=1` is the escape hatch.
+
+## Me
+
+- Name / how to refer to me: <optional>
+- Anything about how you want to be worked with that isn't in CLAUDE.md

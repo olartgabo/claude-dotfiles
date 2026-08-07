@@ -1,8 +1,9 @@
 # Working agreement — MCPJam
 
-Shared Claude Code configuration for the team. Machine-specific facts (paths,
-shell, OS-specific tooling) live in `CLAUDE.local.md`, which Claude Code loads
-after this file. Copy `CLAUDE.local.md.example` to create yours.
+Shared Claude Code configuration for the team. This file holds only what is true
+for everyone. Machine-specific facts — checkout paths, shell, which CLI tools
+exist — live in `CLAUDE.local.md`, which Claude Code loads after this file.
+Anything you'd have to change on a teammate's laptop belongs there, not here.
 
 ## Who this is for
 
@@ -60,14 +61,18 @@ declarative sentences.
 
 ## Guard hooks
 
-PreToolUse hooks in `~/.claude/hooks/` (`.sh` on macOS/Linux, `.ps1` on
-Windows) deny destructive git, `.env` writes, literal credentials, generated
-artifacts, and pipe-to-shell. If a guard blocks something you genuinely need,
-say so rather than working around it; `CLAUDE_GUARD_OFF=1` is the deliberate
-escape hatch.
+PreToolUse hooks in `~/.claude/hooks/` (`guard-bash.mjs`, `guard-write.mjs` —
+one Node implementation on every platform) deny destructive git, deletes that
+resolve outside the working directory, writes to credential files, literal
+credentials in file content, edits to generated artifacts, and pipe-to-shell.
+The README lists what they cover and what they deliberately don't.
+
+If a guard blocks something genuinely needed, say so rather than working around
+it — a rule with a false positive is a bug worth a fixture in
+`tests/guards.test.mjs`. `CLAUDE_GUARD_OFF=1` is the deliberate escape hatch.
 
 ## Installing / updating
 
-The repo is a copy source, not an installer. Copy `.claude/` into your
-`~/.claude/` (or symlink it), then create `CLAUDE.local.md` and
-`settings.local.json` for this machine. See the README.
+`node install.mjs` from a checkout of the dotfiles repo. It merges into your
+existing settings, backs up what it replaces, and verifies the hooks are live
+before it reports success. Re-run it to update. See the README.

@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(nvim:*)",
-      "Bash(git clone:*)"
-    ]
-  }
-}
