@@ -44,8 +44,8 @@ The payload lives in `claude/`, not `.claude/`, on purpose: `.claude/settings.js
 is also exactly the path Claude Code reads as *project* settings. If this repo
 shipped its config there, opening Claude Code inside the checkout would apply the
 team config as project config — including hook commands whose `{{CLAUDE_DIR}}`
-placeholder is still unsubstituted. (It would also silently drop
-`permissions.defaultMode: "auto"`, which is ignored at project scope.)
+placeholder is still unsubstituted. (And a `permissions.defaultMode` wouldn't
+belong there — it's a per-person safety choice, never a shipped default.)
 
 ## Requirements
 
@@ -66,18 +66,19 @@ the installer preserves whatever you already have:
   "effortLevel": "high",        // same
   "theme": "dark",              // taste
   "tui": "fullscreen",          // taste
-  "permissions": { "defaultMode": "auto" }
+  "permissions": { "defaultMode": "manual" }
 }
 ```
 
 Two notes on `defaultMode`:
 
-- `"auto"` auto-approves read-only calls and file edits and routes the rest
-  through a background safety classifier. It is a research preview. Enabling it
-  team-wide would make the guard hooks the last line of defense for everyone, so
-  it is a per-person opt-in here, not a shared default.
-- It only applies from user scope (`~/.claude/settings.json`). A repository can't
-  grant itself auto mode.
+- `"manual"` reviews every action: nothing is auto-approved, and any tool call
+  that needs permission prompts. It's the baseline posture here, and a faster
+  mode (`"acceptEdits"`, say) is a per-person call, not a team default.
+- It stays a per-person choice: `claude/settings.json` ships only `hooks` and
+  `enabledPlugins`, and the installer never touches your mode. `"auto"` in
+  particular is ignored at project scope, so a repository can't grant itself
+  auto mode.
 
 The seven plugins in `enabledPlugins` (`typescript-lsp`, `mcp-server-dev`,
 `code-review`, `pr-review-toolkit`, `github`, `context7`, `security-guidance`)
