@@ -10,7 +10,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/home/olartgabo/.claude/hooks/guard-write.sh",
+            "command": "~/.claude/hooks/guard-write.sh",
             "timeout": 10,
             "statusMessage": "checking write target"
           }
@@ -21,7 +21,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/home/olartgabo/.claude/hooks/guard-bash.sh",
+            "command": "~/.claude/hooks/guard-bash.sh",
             "timeout": 10,
             "statusMessage": "checking command"
           }

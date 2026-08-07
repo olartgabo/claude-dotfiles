@@ -2,3 +2,9 @@
 *.swp
 *.swo
 *~
+
+# machine-local overlays — never commit these
+.claude/settings.local.json
+.claude/CLAUDE.local.md
+.claude/.credentials.json
+.claude/projects/*
