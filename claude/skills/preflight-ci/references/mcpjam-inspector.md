@@ -79,9 +79,9 @@ and why. If you bump `@playwright/test`, bump the container tag in `test.yml` to
 
 ## Reading a `test:parallel` failure
 
-`test:parallel` runs 8 workspaces under `concurrently --kill-others-on-fail`. The
-first real failure SIGTERMs the other seven, so the log ends with a pile of
-casualties that look like failures and aren't:
+`test:parallel` runs one process per workspace under `concurrently
+--kill-others-on-fail`. The first real failure SIGTERMs all the others, so the log
+ends with a pile of casualties that look like failures and aren't:
 
 ```
 [slack] npm run verify -w @mcpjam/slack-app exited with code 1     <- the cause

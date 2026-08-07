@@ -109,6 +109,22 @@ const SHELL_CASES = [
   ["allow", "rm -rf /repo/app/dist"],
   ["allow", "rm src/tmp.ts"],
   ["allow", "npm rm left-pad", "npm's own subcommand is not rm(1)"],
+
+  // --- deletes with no visible target. The flags parse fine; the targets
+  // arrive from somewhere this guard cannot read, which is not the same thing
+  // as safe.
+  ["deny", "echo /etc | xargs rm -rf"],
+  ["deny", "echo ~ | xargs rm -rf"],
+  ["deny", "find / -name x | xargs rm -rf"],
+  ["deny", "rm -rf $(cat list)"],
+  ["deny", 'rm -rf "$TARGET"'],
+  ["deny", "rm -rf $TARGET"],
+  ["deny", "rm -rf `cat list`"],
+  ["deny", "ls | xargs -0 rm -rf"],
+  ["deny", "Remove-Item -Recurse -Force"],
+  ["deny", "rm -rf ${BUILD_DIR}"],
+  ["allow", "find . -name '*.tmp' | xargs rm", "no recursion, a common idiom"],
+  ["allow", "rm -rf ./dist/*", "a glob under a prefix that is inside the repo"],
   ["allow", 'echo "rm -rf /"', "a string argument is not an invocation"],
 
   // --- writing credentials from the shell

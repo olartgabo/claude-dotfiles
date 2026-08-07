@@ -6,7 +6,7 @@ guard hooks, and two skills.
 ```bash
 git clone https://github.com/olartgabo/claude-dotfiles ~/claude-dotfiles
 cd ~/claude-dotfiles
-npm test              # the guards' own test suite — 171 fixtures
+npm test              # the guards' own test suite — 183 fixtures
 node install.mjs      # add --dry-run first if you want to see the plan
 ```
 
@@ -102,6 +102,11 @@ the working directory, is the working directory, is `~`, or is `/`. Recursion
 flags are not a precondition: `--recursive`, `-rf`, `-R` and `-Recurse` all read
 the same, and `rm -rf ../../..` is resolved before it's judged.
 
+A recursive delete with no target this guard can read is also refused —
+`ls | xargs rm -rf`, `rm -rf $(cat list)`, `rm -rf "$TARGET"`. The flags parse
+correctly there and the operand list is simply empty or unexpandable, so allowing
+it would leave the flagship rule looking covered while doing nothing.
+
 **secrets** — writes to `.env*`, `.envrc`, `.npmrc`, `.netrc`, `.pypirc`,
 `~/.ssh/*`, `~/.aws/*`, `~/.kube/*`, `.credentials.json`, `*.pem`/`*.key`,
 service-account JSON; shell redirection into any of those. In file content:
@@ -131,6 +136,9 @@ hurt:
   the program does. Quoted text is treated as data, which is what keeps
   `git commit -m "why --no-verify is banned"` working.
 - **Non-git, non-`rm` destruction.** `dd`, `mkfs`, `truncate`, `shred`.
+- **Reflog-recoverable git.** `git branch -D main` and
+  `git update-ref -d refs/heads/main` are allowed on purpose: both are reachable
+  again through the reflog, which is why `reflog expire` *is* blocked.
 - **JWTs and generic high-entropy strings.** Too many false positives on test
   fixtures to be worth it.
 - **A determined bypass.** These are a seatbelt against a plausible mistake, not
@@ -144,7 +152,7 @@ guard people route around.
 ## Working on the guards
 
 ```bash
-npm test                     # 171 fixtures, both guards, plus stdin round-trips
+npm test                     # 183 fixtures, both guards, plus stdin round-trips
 node install.mjs --dry-run   # what an install would change
 ```
 

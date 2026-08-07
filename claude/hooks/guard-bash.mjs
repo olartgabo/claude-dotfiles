@@ -178,19 +178,49 @@ function checkGit(git, headBranch) {
   return null;
 }
 
+function isRecursive(flags, args) {
+  return (
+    hasShortFlag(flags, "r") || // also catches PowerShell's -Recurse
+    hasShortFlag(flags, "R") ||
+    hasLongFlag(flags, "recursive") ||
+    args.some((a) => /^\/[sS]$/.test(a))
+  );
+}
+
+// An unexpanded variable or command substitution survives tokenizing as literal
+// `$`/backtick text. There is no way to know what it points at.
+const UNRESOLVABLE = /[$`]/;
+
 function checkDelete(tokens, { cwd, home, caseInsensitive }) {
   const { name, args } = commandWord(tokens);
   if (!DELETE_COMMANDS.has(name)) return null;
 
-  // No recursion precondition. `--recursive`, `-rf`, `-R`, `/s` and PowerShell's
-  // `-Recurse` all mean the same thing, and getting that detection wrong used to
-  // skip every path check below it. A non-recursive delete of /etc/passwd is not
-  // fine either, so the paths are always checked.
-  const { operands } = parseArgs(args);
-  for (const operand of operands) {
-    if (/^\/[a-zA-Z]$/.test(operand)) continue; // a DOS switch (`rd /s /q`), not a path
+  const { flags, operands } = parseArgs(args);
+  // `rd /s /q path` — DOS switches are operands to this parser, not paths.
+  const paths = operands.filter((o) => !/^\/[a-zA-Z]$/.test(o));
+
+  // `ls | xargs rm -rf`, `rm -rf $(cat list)`, `rm -rf` after a backtick — the
+  // flags parse correctly and there is simply nothing left to check. Returning
+  // "allowed" there is worse than a false positive, because it looks covered.
+  if (isRecursive(flags, args) && !paths.length) {
+    return deny(
+      "Refusing a recursive delete with no visible target — the paths come from stdin, a substitution or an expansion, so there is nothing here I can check against the working directory. Spell the paths out, or run it yourself.",
+    );
+  }
+
+  // No recursion precondition on the path checks themselves. `--recursive`,
+  // `-rf`, `-R`, `/s` and `-Recurse` all mean the same thing, and getting that
+  // detection wrong used to skip every check below it. A non-recursive delete of
+  // /etc/passwd is not fine either, so the paths are always checked.
+  for (const operand of paths) {
     const expanded = expandHome(operand, home);
     const literal = operand.replace(/\/+$/, "");
+
+    if (UNRESOLVABLE.test(expanded)) {
+      return deny(
+        `Refusing to delete '${operand}' — I can't see what that expands to, so I can't tell whether it's inside the working directory. Spell the path out, or run it yourself.`,
+      );
+    }
 
     if (["~", "/", ".", "..", "*", "/*", "$HOME", "%USERPROFILE%"].includes(literal)) {
       return deny(
